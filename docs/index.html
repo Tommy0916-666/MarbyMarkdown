@@ -1,11 +1,751 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MarbyMarkdown</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>MarbyMarkdown · 下一代 Markdown 编辑器</title>
+  <!-- GSAP + ScrollTrigger -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <!-- Font Awesome 6 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    /* ========== 全局重置与变量 ========== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    :root {
+      --coral: #FF6B4A;
+      --orange: #FF8C42;
+      --amber: #FFB347;
+      --surface: #FFF3E0;
+      --text-primary: #2C2416;
+      --text-secondary: #5E4B3C;
+      --card-bg: rgba(255,245,235,0.88);
+      --glass-bg: rgba(255,250,245,0.75);
+      --shadow-sm: 0 4px 12px rgba(255,140,66,0.15);
+      --shadow-md: 0 12px 32px rgba(255,140,66,0.2);
+      --border-light: rgba(255,183,71,0.4);
+      --radius-sm: 8px;
+      --radius-md: 16px;
+      --transition: cubic-bezier(0.23,1,0.32,1);
+    }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--surface);
+      color: var(--text-primary);
+      line-height: 1.6;
+      overflow-x: hidden;
+      cursor: none;
+      perspective: 1200px;
+    }
+    /* 隐藏原生鼠标 */
+    a, button, input, textarea, select, [role="button"], .btn {
+      cursor: none !important;
+    }
+    /* ========== 层级系统 ========== */
+    .bg-layer { z-index: -2; }
+    .geo-layer, .floating-lines, .liquid-canvas { z-index: -1; }
+    .particle-canvas { z-index: 0; }
+    .content-layer { z-index: 1; position: relative; }
+    .cursor-layer { z-index: 10000; }
+    .transition-layer { z-index: 9999; position: fixed; top:0; left:0; width:100%; height:100%; pointer-events: none; }
+    /* ========== 动态渐变背景 ========== */
+    .bg-layer {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: linear-gradient(135deg, #FFF3E0 0%, #FFECD2 30%, #FFE9D0 60%, #FFF0E0 100%);
+      background-size: 400% 400%;
+      animation: gradientShift 20s ease infinite;
+    }
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 100%; }
+      100% { background-position: 0% 50%; }
+    }
+    /* 3D几何体旋转 */
+    .geo-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; overflow: hidden; }
+    .geo {
+      position: absolute; opacity: 0.1;
+      border: 2px solid rgba(255,140,66,0.5);
+      background: rgba(255,200,120,0.05);
+      transform-style: preserve-3d;
+      animation: rotate3D 25s infinite linear;
+    }
+    .geo:nth-child(1) { width: 350px; height: 350px; top: -10%; left: -5%; border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; }
+    .geo:nth-child(2) { width: 280px; height: 280px; bottom: 10%; right: -3%; border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; animation-direction: reverse; animation-duration: 30s; }
+    .geo:nth-child(3) { width: 220px; height: 220px; top: 60%; left: 50%; border-radius: 50%; animation-duration: 35s; }
+    @keyframes rotate3D {
+      0% { transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(1); }
+      50% { transform: rotateX(60deg) rotateY(30deg) rotateZ(45deg) scale(1.15); }
+      100% { transform: rotateX(360deg) rotateY(360deg) rotateZ(360deg) scale(1); }
+    }
+    /* 浮线 */
+    .floating-lines { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events: none; overflow: hidden; }
+    .line {
+      position: absolute; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--orange), transparent);
+      opacity: 0.3; transform-origin: left;
+    }
+    /* 液态流动Canvas */
+    .liquid-canvas { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events: none; }
+    /* 粒子Canvas */
+    .particle-canvas { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events: none; }
+    /* ========== 导航 ========== */
+    .navbar {
+      position: fixed; top: 0; left: 0; width: 100%; padding: 1rem 2rem;
+      display: flex; justify-content: space-between; align-items: center;
+      background: rgba(255,250,245,0.8); backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border-light);
+      z-index: 1000; transition: 0.3s;
+      box-shadow: 0 4px 20px rgba(255,140,66,0.08);
+    }
+    .navbar.scrolled { background: rgba(255,245,235,0.95); box-shadow: 0 8px 30px rgba(255,140,66,0.25); }
+    .logo {
+      font-size: 1.8rem; font-weight: 800;
+      background: linear-gradient(135deg, var(--coral), var(--orange));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      display: flex; align-items: center; gap: 0.4rem;
+    }
+    .logo i { background: none; -webkit-text-fill-color: var(--coral); font-size: 2rem; }
+    .nav-links { display: flex; gap: 2rem; list-style: none; align-items: center; }
+    .nav-links a { text-decoration: none; color: var(--text-primary); font-weight: 600; position: relative; padding: 0.5rem 0; transition: 0.3s; cursor: none; }
+    .nav-links a::after { content: ''; position: absolute; bottom: 0; left: 0; width: 0; height: 2px; background: var(--orange); transition: width 0.3s var(--transition); }
+    .nav-links a:hover { color: var(--coral); }
+    .nav-links a:hover::after { width: 100%; }
+    .github-icon { font-size: 1.6rem; color: var(--text-primary); transition: 0.3s; }
+    .github-icon:hover { color: var(--coral); transform: rotate(15deg) scale(1.2); }
+    /* ========== Hero ========== */
+    .hero {
+      min-height: 100vh; display: flex; flex-direction: column;
+      justify-content: center; align-items: center; text-align: center;
+      padding: 8rem 2rem 4rem; transform-style: preserve-3d;
+      position: relative; z-index: 2;
+    }
+    .hero-title {
+      font-size: clamp(3rem, 8vw, 6rem); font-weight: 900; line-height: 1.15;
+      margin-bottom: 1.5rem;
+      background: linear-gradient(to right, #FF5722, #FF8C42, #FFB347);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      letter-spacing: -1px;
+    }
+    /* 修复拆分字符可见性 */
+    .hero-title span {
+      display: inline-block;
+      background: linear-gradient(to right, #FF5722, #FF8C42, #FFB347);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .hero-subtitle {
+      font-size: clamp(1.1rem, 2.2vw, 1.5rem); color: var(--text-secondary);
+      max-width: 600px; margin: 0 auto 2.5rem;
+    }
+    .hero-buttons { display: flex; gap: 1.5rem; flex-wrap: wrap; justify-content: center; }
+    .btn {
+      padding: 0.9rem 2.2rem; border-radius: 50px; font-weight: 700; font-size: 1.1rem;
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      transition: all 0.35s var(--transition); border: none; cursor: none;
+      letter-spacing: 0.5px; position: relative; overflow: hidden;
+    }
+    .btn-primary { background: linear-gradient(135deg, #FF6B4A, #FF4D2D); color: white; box-shadow: 0 10px 25px rgba(255,77,45,0.45); }
+    .btn-primary:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(255,77,45,0.7); }
+    .btn-outline { background: transparent; border: 2px solid var(--orange); color: var(--orange); }
+    .btn-outline:hover { background: rgba(255,140,66,0.08); transform: translateY(-4px); box-shadow: 0 10px 25px rgba(255,140,66,0.35); }
+    .editor-mock {
+      margin-top: 4rem; width: 85%; max-width: 900px;
+      background: var(--card-bg); backdrop-filter: blur(24px);
+      border-radius: var(--radius-md); padding: 1.8rem;
+      box-shadow: var(--shadow-md), 0 0 0 1px var(--border-light);
+      transform: rotateX(2deg); transition: transform 0.4s;
+    }
+    .editor-mock:hover { transform: rotateX(0deg) translateY(-8px); }
+    .editor-mock pre {
+      background: #FFF8F0; border-radius: var(--radius-sm); padding: 1.5rem;
+      color: #3E2A1F; font-family: 'Fira Code', monospace; border: 1px solid var(--border-light);
+    }
+    /* ========== 通用区块 ========== */
+    .section { padding: 6rem 2rem; max-width: 1300px; margin: 0 auto; position: relative; z-index: 3; }
+    .section-title { font-size: clamp(2rem, 5vw, 3rem); font-weight: 800; text-align: center; margin-bottom: 1rem; color: #2C2416; }
+    .section-subtitle { text-align: center; color: var(--text-secondary); font-size: 1.2rem; margin-bottom: 3rem; }
+    .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 2rem; margin-top: 2rem; }
+    .card {
+      background: var(--card-bg); backdrop-filter: blur(20px); border-radius: var(--radius-md);
+      padding: 2.2rem 2rem; box-shadow: var(--shadow-sm); border: 1px solid var(--border-light);
+      transition: 0.3s var(--transition); transform-style: preserve-3d;
+    }
+    .card:hover { transform: translateY(-8px) rotateX(2deg) rotateY(-2deg); box-shadow: 0 30px 60px rgba(255,140,66,0.3); }
+    .card-icon { font-size: 2.5rem; margin-bottom: 1rem; background: linear-gradient(135deg, var(--coral), var(--amber)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .ai-block {
+      background: rgba(255,245,235,0.85); backdrop-filter: blur(20px); border-radius: var(--radius-md);
+      padding: 2.2rem; border: 1px solid var(--border-light); transition: 0.3s; transform-style: preserve-3d;
+    }
+    .ai-block:hover { transform: translateY(-6px) rotateY(1deg); box-shadow: 0 25px 45px rgba(255,140,66,0.25); }
+    .team-card {
+      display: flex; align-items: center; gap: 1.5rem; background: var(--glass-bg);
+      backdrop-filter: blur(20px); border-radius: var(--radius-lg); padding: 2.5rem;
+      max-width: 550px; margin: 2rem auto; border: 1px solid var(--border-light);
+      box-shadow: var(--shadow-md); transition: 0.3s; transform-style: preserve-3d;
+    }
+    .team-card:hover { transform: translateZ(20px) rotateX(3deg); box-shadow: 0 35px 60px rgba(255,140,66,0.35); }
+    .avatar { width: 80px; height: 80px; border-radius: 20px; background: linear-gradient(135deg, var(--coral), var(--amber)); display: flex; align-items: center; justify-content: center; font-size: 2.5rem; color: white; box-shadow: 0 10px 30px rgba(255,107,74,0.6); }
+    .footer { text-align: center; padding: 3rem; background: rgba(255,245,235,0.85); backdrop-filter: blur(16px); border-top: 1px solid var(--border-light); margin-top: 4rem; font-size: 0.95rem; position: relative; z-index: 3; }
+    /* ========== 液体变形按钮容器 ========== */
+    .gooey-button {
+      filter: url('#gooey'); position: relative; display: inline-block;
+    }
+    .gooey-button .btn { position: relative; z-index: 2; }
+    /* ========== 文字拉伸滤镜 ========== */
+    .stretch-text {
+      filter: url('#distortion'); transition: filter 0.3s;
+    }
+    .stretch-text:hover { filter: url('#distortion') brightness(1.1); }
+    /* ========== 色彩漂移文字 ========== */
+    .chromatic {
+      position: relative; display: inline-block;
+    }
+    .chromatic::before, .chromatic::after {
+      content: attr(data-text); position: absolute; top: 0; left: 0; opacity: 0.6;
+    }
+    .chromatic::before { color: #f00; transform: translate(-3px, 0); mix-blend-mode: screen; }
+    .chromatic::after { color: #0ff; transform: translate(3px, 0); mix-blend-mode: screen; }
+    /* ========== 响应式 ========== */
+    @media (max-width: 768px) {
+      .navbar { padding: 1rem; }
+      .hero { padding: 6rem 1.2rem 3rem; }
+      .section { padding: 4rem 1.2rem; }
+      .grid-3 { grid-template-columns: 1fr; }
+    }
+  </style>
 </head>
 <body>
-    <!-- 暂时留空，后面再完善 -->
+  <!-- 滤镜定义 -->
+  <svg style="position: absolute; width: 0; height: 0;">
+    <defs>
+      <filter id="gooey">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur" />
+        <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -9" result="gooey" />
+        <feComposite in="SourceGraphic" in2="gooey" operator="atop"/>
+      </filter>
+      <filter id="distortion" x="-20%" y="-20%" width="140%" height="140%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="3" result="noise" />
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="10" xChannelSelector="R" yChannelSelector="G" />
+      </filter>
+    </defs>
+  </svg>
+
+  <!-- 背景层 -->
+  <div class="bg-layer"></div>
+  <div class="geo-layer">
+    <div class="geo"></div><div class="geo"></div><div class="geo"></div>
+  </div>
+  <div class="floating-lines" id="floatingLines"></div>
+  <canvas class="liquid-canvas" id="liquidCanvas"></canvas>
+  <canvas class="particle-canvas" id="particleCanvas"></canvas>
+
+  <!-- 自定义光标层 -->
+  <div class="cursor" id="cursor" style="position: fixed; width: 24px; height: 24px; border-radius: 50%; pointer-events: none; z-index: 10001; background: radial-gradient(circle, var(--coral) 0%, rgba(255,107,74,0.8) 40%, transparent 70%); mix-blend-mode: difference; box-shadow: 0 0 20px rgba(255,107,74,0.9), 0 0 40px rgba(255,140,66,0.6); transition: width 0.15s, height 0.15s;"></div>
+
+  <!-- 全屏转场遮罩（用于撕裂效果） -->
+  <canvas class="transition-layer" id="transitionCanvas" style="display: none;"></canvas>
+
+  <!-- 内容层 -->
+  <div class="content-layer">
+    <!-- 导航 -->
+    <nav class="navbar" id="navbar">
+      <div class="logo"><i class="fas fa-feather-alt"></i> MarbyMarkdown</div>
+      <ul class="nav-links">
+        <li><a href="#features">文档操作</a></li>
+        <li><a href="#ai">AI 增强</a></li>
+        <li><a href="#about">关于</a></li>
+        <li><a href="https://github.com/Tommy0916-666/MarbyMarkdown" target="_blank" class="github-icon"><i class="fab fa-github"></i></a></li>
+      </ul>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero">
+      <div id="heroTitleWrapper">
+        <h1 class="hero-title" id="heroTitle">MarbyMarkdown<br>赋予 Markdown 全新灵魂</h1>
+      </div>
+      <p class="hero-subtitle chromatic" data-text="毫秒级渲染 · AI 智能套件 · 完全开源 MIT">毫秒级渲染 · AI 智能套件 · 完全开源 MIT</p>
+      <div class="hero-buttons">
+        <a href="https://github.com/Tommy0916-666/MarbyMarkdown" target="_blank" class="btn btn-primary" id="btnStar"><i class="fas fa-star"></i> GitHub Star</a>
+        <a href="#features" class="btn btn-outline"><i class="fas fa-rocket"></i> 探索功能</a>
+      </div>
+      <div class="editor-mock" id="editorMock">
+        <pre><code># 👋 欢迎使用 MarbyMarkdown
+基于 Milk Up 二次开发
+集成 AI 续写、优化、聊天
+文档绑定 & 自动保存回退</code></pre>
+      </div>
+    </section>
+
+    <!-- 文档操作 -->
+    <section class="section" id="features">
+      <h2 class="section-title">📂 超越原生的文档管理</h2>
+      <p class="section-subtitle">为高效写作打造，每一个细节都精心设计</p>
+      <div class="grid-3">
+        <div class="card" id="card1">
+          <div class="card-icon"><i class="fas fa-history"></i></div>
+          <h3>最近文件</h3>
+          <p>自动记录最近打开的文件，自定义记录数量，启动即恢复工作状态。</p>
+        </div>
+        <div class="card" id="card2">
+          <div class="card-icon"><i class="fas fa-save"></i></div>
+          <h3>自动保存 & 回退</h3>
+          <p>按间隔自动保存，支持一键回退到保存前版本，安心修改无顾虑。</p>
+        </div>
+        <div class="card" id="card3">
+          <div class="card-icon"><i class="fas fa-bell"></i></div>
+          <h3>保存提醒弹窗</h3>
+          <p>优雅的弹窗提醒，防止意外丢失，又不打断你的创作心流。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- AI 增强（添加滚动凝固） -->
+    <section class="section" id="ai">
+      <h2 class="section-title">🧠 AI 增强套件，全维度掌控</h2>
+      <p class="section-subtitle">全局统一配置，独立开关，让 AI 真正为你工作</p>
+      <div style="display: flex; flex-wrap: wrap; gap: 2rem;" id="aiCards">
+        <div class="ai-block">
+          <h3><i class="fas fa-pen-fancy" style="color:var(--coral);"></i> AI 续写（手动触发）</h3>
+          <p>支持手动快捷键触发，也可设置延迟自动触发。灰色预览，再按接受续写转为正文，杜绝 token 浪费。</p>
+        </div>
+        <div class="ai-block">
+          <h3><i class="fas fa-magic" style="color:var(--orange);"></i> AI 优化（润色）</h3>
+          <p>选中文本一键润色，提供三种预设：<strong>更正式、更口语化、更简洁</strong>，并可自定义提示词。</p>
+        </div>
+        <div class="ai-block">
+          <h3><i class="fas fa-comments" style="color:var(--amber);"></i> AI 聊天（文档绑定）</h3>
+          <p>侧边栏聊天，每篇文档独立上下文。历史可浏览，跨文档不串扰，标题 AI 自动生成。</p>
+        </div>
+      </div>
+      <div class="ai-chat-detail" style="margin-top:2rem; background:rgba(255,245,235,0.9); backdrop-filter:blur(20px); border-radius:var(--radius-md); padding:2rem; border-left:5px solid var(--orange);">
+        <p><strong>💡 独特设计：</strong> AI 聊天强绑定文档，切换文档时只读历史，禁止提问，保持对话纯粹。历史标题由最后一次聊天 AI 自动生成。</p>
+      </div>
+    </section>
+
+    <!-- 关于 -->
+    <section class="section" id="about">
+      <h2 class="section-title">👨‍💻 关于 MarbyMarkdown</h2>
+      <div class="team-card">
+        <div class="avatar"><i class="fas fa-user-astronaut"></i></div>
+        <div>
+          <h3>Tommy0916</h3>
+          <p style="color:var(--text-secondary);">独立开发者，将创意注入每一行代码，打造极致写作伴侣。</p>
+          <div style="margin-top:1rem; display:flex; gap:1rem;">
+            <a href="https://github.com/Tommy0916-666" target="_blank" style="color:#2C2416; cursor:none;"><i class="fab fa-github"></i></a>
+            <a href="mailto:marby.prc@qq.com" style="color:#2C2416; cursor:none;"><i class="fas fa-envelope"></i></a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+      <p>© 2026 Tommy0916 · MIT License</p>
+      <p style="opacity:0.8;">基于 Milk Up 二次开发，遵循 MIT 开源协议</p>
+      <p style="margin-top:0.5rem;">MarbyMarkdown —— 下一代 Markdown 体验</p>
+    </footer>
+  </div>
+
+  <script>
+    (function() {
+      // ========== 1. 动态浮线生成 ==========
+      const linesContainer = document.getElementById('floatingLines');
+      for (let i = 0; i < 20; i++) {
+        const line = document.createElement('div');
+        line.className = 'line';
+        line.style.left = Math.random() * 100 + '%';
+        line.style.top = Math.random() * 100 + '%';
+        line.style.width = Math.random() * 200 + 60 + 'px';
+        line.style.animation = `floatLine ${4 + Math.random() * 10}s infinite alternate`;
+        linesContainer.appendChild(line);
+      }
+      // 浮线动画样式注入
+      const styleEl = document.createElement('style');
+      styleEl.textContent = `
+        @keyframes floatLine {
+          0% { transform: translateX(-10%) translateY(0) rotate(0deg); opacity: 0.1; }
+          100% { transform: translateX(10%) translateY(-30px) rotate(3deg); opacity: 0.5; }
+        }
+      `;
+      document.head.appendChild(styleEl);
+
+      // ========== 2. 液态渐变流动背景 (Canvas) ==========
+      const liquidCanvas = document.getElementById('liquidCanvas');
+      const lctx = liquidCanvas.getContext('2d');
+      let liquidWidth, liquidHeight;
+      function resizeLiquid() {
+        liquidWidth = window.innerWidth;
+        liquidHeight = window.innerHeight;
+        liquidCanvas.width = liquidWidth;
+        liquidCanvas.height = liquidHeight;
+      }
+      window.addEventListener('resize', resizeLiquid);
+      resizeLiquid();
+      const blobs = [
+        { x: 0.2, y: 0.3, vx: 0.0002, vy: 0.0001, radius: 150, color: '#FFB347' },
+        { x: 0.7, y: 0.6, vx: -0.00015, vy: -0.0001, radius: 200, color: '#FF8C42' },
+        { x: 0.5, y: 0.2, vx: 0.0001, vy: 0.0002, radius: 180, color: '#FF6B4A' }
+      ];
+      function animateLiquid() {
+        lctx.clearRect(0, 0, liquidWidth, liquidHeight);
+        blobs.forEach(b => {
+          b.x += b.vx;
+          b.y += b.vy;
+          if (b.x < 0 || b.x > 1) b.vx *= -1;
+          if (b.y < 0 || b.y > 1) b.vy *= -1;
+          const px = b.x * liquidWidth;
+          const py = b.y * liquidHeight;
+          const gradient = lctx.createRadialGradient(px, py, 0, px, py, b.radius);
+          gradient.addColorStop(0, b.color);
+          gradient.addColorStop(1, 'rgba(255,200,120,0)');
+          lctx.fillStyle = gradient;
+          lctx.fillRect(0, 0, liquidWidth, liquidHeight);
+        });
+        requestAnimationFrame(animateLiquid);
+      }
+      animateLiquid();
+
+      // ========== 3. 粒子系统 (引力场光标排斥) ==========
+      const particleCanvas = document.getElementById('particleCanvas');
+      const pctx = particleCanvas.getContext('2d');
+      let pWidth, pHeight;
+      const particles = [];
+      const PARTICLE_COUNT = 120;
+      function resizeParticle() {
+        pWidth = window.innerWidth;
+        pHeight = window.innerHeight;
+        particleCanvas.width = pWidth;
+        particleCanvas.height = pHeight;
+      }
+      window.addEventListener('resize', resizeParticle);
+      resizeParticle();
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        particles.push({
+          x: Math.random() * pWidth,
+          y: Math.random() * pHeight,
+          vx: (Math.random() - 0.5) * 0.5,
+          vy: (Math.random() - 0.5) * 0.5,
+          radius: Math.random() * 3 + 1,
+        });
+      }
+      function animateParticles() {
+        pctx.clearRect(0, 0, pWidth, pHeight);
+        for (let p of particles) {
+          // 引力排斥
+          const dx = p.x - mouseX;
+          const dy = p.y - mouseY;
+          const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+          const force = Math.min(200 / dist, 4);
+          p.vx += (dx / dist) * force * 0.02;
+          p.vy += (dy / dist) * force * 0.02;
+          p.vx *= 0.98;
+          p.vy *= 0.98;
+          p.x += p.vx;
+          p.y += p.vy;
+          if (p.x < 0) p.x = pWidth;
+          if (p.x > pWidth) p.x = 0;
+          if (p.y < 0) p.y = pHeight;
+          if (p.y > pHeight) p.y = 0;
+          pctx.beginPath();
+          pctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+          pctx.fillStyle = 'rgba(255,140,66,0.5)';
+          pctx.fill();
+        }
+        requestAnimationFrame(animateParticles);
+      }
+      animateParticles();
+
+      // ========== 4. 自定义光标 (磁吸变形 + 光线追踪) ==========
+      const cursor = document.getElementById('cursor');
+      let mouseX = window.innerWidth / 2, mouseY = window.innerHeight / 2;
+      let curX = mouseX, curY = mouseY;
+      let cursorScale = 1;
+      const trailCount = 8;
+      const trails = [];
+      for (let i = 0; i < trailCount; i++) {
+        const t = document.createElement('div');
+        t.style.position = 'fixed'; t.style.width = '8px'; t.style.height = '8px';
+        t.style.borderRadius = '50%'; t.style.pointerEvents = 'none'; t.style.zIndex = '10000';
+        t.style.background = 'var(--orange)'; t.style.mixBlendMode = 'screen';
+        t.style.opacity = 0.5 - i * 0.06;
+        document.body.appendChild(t);
+        trails.push({ el: t, x: 0, y: 0 });
+      }
+      document.addEventListener('mousemove', e => { mouseX = e.clientX; mouseY = e.clientY; });
+      // 磁吸检测
+      const magnets = document.querySelectorAll('a, .btn, .card, .ai-block, .team-card');
+      function updateCursor() {
+        let targetX = mouseX, targetY = mouseY;
+        let magnetActive = false;
+        magnets.forEach(el => {
+          const rect = el.getBoundingClientRect();
+          if (mouseX > rect.left && mouseX < rect.right && mouseY > rect.top && mouseY < rect.bottom) {
+            const cx = rect.left + rect.width/2, cy = rect.top + rect.height/2;
+            targetX = cx + (mouseX - cx) * 0.5;
+            targetY = cy + (mouseY - cy) * 0.5;
+            magnetActive = true;
+          }
+        });
+        const speed = magnetActive ? 0.15 : 0.25;
+        curX += (targetX - curX) * speed;
+        curY += (targetY - curY) * speed;
+        cursor.style.left = curX + 'px';
+        cursor.style.top = curY + 'px';
+        cursor.style.width = (24 * cursorScale) + 'px';
+        cursor.style.height = (24 * cursorScale) + 'px';
+        // 光线追踪效果：根据移动方向拉伸光晕
+        const dx = mouseX - curX, dy = mouseY - curY;
+        const angle = Math.atan2(dy, dx);
+        const stretch = Math.min(Math.sqrt(dx*dx+dy*dy) / 5, 3);
+        cursor.style.boxShadow = `
+          0 0 ${20 + stretch*10}px rgba(255,107,74,0.9),
+          ${Math.cos(angle)*stretch*15}px ${Math.sin(angle)*stretch*15}px ${30+stretch*15}px rgba(255,140,66,0.7)
+        `;
+        // 拖尾
+        let prevX = curX, prevY = curY;
+        trails.forEach((t, i) => {
+          t.x += (prevX - t.x) * 0.3;
+          t.y += (prevY - t.y) * 0.3;
+          t.el.style.left = t.x + 'px';
+          t.el.style.top = t.y + 'px';
+          prevX = t.x; prevY = t.y;
+        });
+        requestAnimationFrame(updateCursor);
+      }
+      updateCursor();
+      document.addEventListener('mousedown', () => { cursorScale = 1.5; });
+      document.addEventListener('mouseup', () => { cursorScale = 1; });
+
+      // ========== 5. 导航栏滚动效果 ==========
+      window.addEventListener('scroll', () => {
+        document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 50);
+      });
+
+      // ========== 6. GSAP 动画初始化 ==========
+      gsap.registerPlugin(ScrollTrigger);
+
+      // Hero 标题逐字景深弹入
+      const titleEl = document.getElementById('heroTitle');
+      const originalText = titleEl.innerText;
+      titleEl.innerHTML = '';
+      originalText.split('').forEach(char => {
+        const span = document.createElement('span');
+        span.innerText = char === ' ' ? '\u00A0' : char;
+        span.style.transform = 'translateZ(-40px) rotateX(-60deg)';
+        span.style.opacity = '0';
+        titleEl.appendChild(span);
+      });
+      titleEl.style.opacity = '1';
+      gsap.to(titleEl.children, {
+        opacity: 1, transform: 'translateZ(0px) rotateX(0deg)',
+        duration: 0.8, stagger: 0.03, ease: "back.out(1.7)", delay: 0.2
+      });
+
+      // 副标题色彩漂移动画
+      gsap.fromTo('.chromatic::before, .chromatic::after', { opacity: 0 }, { opacity: 0.6, duration: 0.5, delay: 0.5 });
+      gsap.fromTo('#heroSubtitle', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.8, delay: 0.9 });
+      gsap.fromTo('#heroButtons', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.8, delay: 1.1 });
+      gsap.fromTo('#editorMock', { opacity: 0, y: 60, rotateX: 10 }, { opacity: 1, y: 0, rotateX: 2, duration: 1, delay: 1.3, ease: "back.out(1.4)" });
+
+      // 卡片交错入场 (3D旋转+滑动)
+      const cards = document.querySelectorAll('.card');
+      cards.forEach((card, i) => {
+        gsap.fromTo(card, { opacity: 0, x: i % 2 === 0 ? -80 : 80, rotateY: i % 2 === 0 ? -25 : 25, scale: 0.9 },
+        { opacity: 1, x: 0, rotateY: 0, scale: 1, duration: 0.8, scrollTrigger: { trigger: card, start: "top 85%" }, ease: "power3.out" });
+      });
+
+      // AI 区块旋转缩放入场
+      const aiBlocks = document.querySelectorAll('.ai-block');
+      aiBlocks.forEach((block, i) => {
+        gsap.fromTo(block, { opacity: 0, scale: 0.8, rotateZ: i % 2 === 0 ? -6 : 6 },
+        { opacity: 1, scale: 1, rotateZ: 0, duration: 0.7, scrollTrigger: { trigger: block, start: "top 85%" }, ease: "back.out(1.2)" });
+      });
+
+      // AI 聊天详情从远景推入
+      gsap.fromTo('.ai-chat-detail', { opacity: 0, z: -200, rotateX: -30 },
+      { opacity: 1, z: 0, rotateX: 0, duration: 1, scrollTrigger: { trigger: '.ai-chat-detail', start: "top 85%" }, ease: "power2.out" });
+
+      // 关于卡片从下旋入
+      gsap.fromTo('.team-card', { opacity: 0, y: 80, rotateX: -40 },
+      { opacity: 1, y: 0, rotateX: 0, duration: 1, scrollTrigger: { trigger: '.team-card', start: "top 85%" }, ease: "back.out(1.4)" });
+
+      // ========== 7. 3D卡片毛玻璃折叠交互 ==========
+      document.querySelectorAll('.card').forEach(card => {
+        card.addEventListener('mousemove', (e) => {
+          const rect = card.getBoundingClientRect();
+          const x = e.clientX - rect.left, y = e.clientY - rect.top;
+          const centerX = rect.width/2, centerY = rect.height/2;
+          const rotateX = (y - centerY)/12, rotateY = (centerX - x)/12;
+          card.style.transform = `perspective(1200px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateZ(30px)`;
+          card.style.boxShadow = '0 35px 70px rgba(255,140,66,0.35), 0 0 0 2px var(--orange)';
+        });
+        card.addEventListener('mouseleave', () => {
+          card.style.transform = '';
+          card.style.boxShadow = '';
+        });
+      });
+
+      // ========== 8. 文字拉伸变形 (SVG滤镜已定义) ==========
+      document.querySelectorAll('.card h3, .ai-block h3').forEach(el => el.classList.add('stretch-text'));
+
+      // ========== 9. 滚动时间凝固 (AI区域) ==========
+      ScrollTrigger.create({
+        trigger: '#ai',
+        start: 'top center',
+        end: 'bottom center',
+        pin: true,
+        pinSpacing: false,
+        onEnter: () => console.log('AI section pinned'),
+        onLeave: () => console.log('AI section unpinned'),
+      });
+
+      // ========== 10. 文字渐隐螺旋 (用于区块过渡，在滚动到AI区块时应用) ==========
+      gsap.to('#ai .section-title', {
+        scrollTrigger: {
+          trigger: '#ai',
+          start: 'top 80%',
+          end: 'top 20%',
+          scrub: 1,
+        },
+        rotateZ: 15, scale: 0.8, opacity: 0, transformOrigin: 'center center',
+      });
+      gsap.to('#ai .section-subtitle', {
+        scrollTrigger: {
+          trigger: '#ai',
+          start: 'top 80%',
+          end: 'top 20%',
+          scrub: 1,
+        },
+        rotateZ: -10, scale: 0.8, opacity: 0,
+      });
+
+      // ========== 11. 碎块重组 (Logo 加载动画) ==========
+      const logo = document.querySelector('.logo');
+      const logoSymbols = logo.innerText.split('');
+      logo.innerHTML = '';
+      logoSymbols.forEach((char, i) => {
+        const span = document.createElement('span');
+        span.innerText = char;
+        span.style.display = 'inline-block';
+        span.style.transform = `translate(${Math.random() * 100 - 50}px, ${Math.random() * 100 - 50}px) rotate(${Math.random() * 360}deg)`;
+        span.style.opacity = '0';
+        logo.appendChild(span);
+      });
+      gsap.to(logo.children, {
+        opacity: 1,
+        transform: 'translate(0,0) rotate(0deg)',
+        duration: 1, stagger: 0.05, delay: 0.1, ease: "back.out(1.5)"
+      });
+
+      // ========== 12. 液体变形按钮 (使用SVG滤镜) ==========
+      const btnStar = document.getElementById('btnStar');
+      btnStar.parentElement.classList.add('gooey-button');
+      // 添加液体小球
+      const blob1 = document.createElement('div');
+      blob1.style.cssText = 'position:absolute; width:20px; height:20px; background:#FF6B4A; border-radius:50%; top:50%; left:50%; transform:translate(-50%,-50%); z-index:1; transition: all 0.3s;';
+      const blob2 = blob1.cloneNode();
+      btnStar.parentElement.appendChild(blob1);
+      btnStar.parentElement.appendChild(blob2);
+      btnStar.addEventListener('mouseenter', () => {
+        gsap.to(blob1, { scale: 3, x: -30, duration: 0.3 });
+        gsap.to(blob2, { scale: 3, x: 30, duration: 0.3 });
+      });
+      btnStar.addEventListener('mouseleave', () => {
+        gsap.to([blob1, blob2], { scale: 1, x: 0, duration: 0.3 });
+      });
+
+      // ========== 13. SVG动态笔画绘制 (Hero标题) ==========
+      // 已通过逐字弹入模拟，此处生成一个SVG文字描边动画覆盖（可选）
+      const svgDraw = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svgDraw.setAttribute('viewBox', '0 0 800 200');
+      svgDraw.style.cssText = 'position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; opacity:0.3;';
+      svgDraw.innerHTML = `
+        <text x="50%" y="50%" font-size="80" font-weight="900" text-anchor="middle" fill="none" stroke="#FF8C42" stroke-width="2" stroke-dasharray="1000" stroke-dashoffset="1000" dominant-baseline="middle">MarbyMarkdown</text>
+      `;
+      document.querySelector('.hero').appendChild(svgDraw);
+      gsap.to(svgDraw.querySelector('text'), { strokeDashoffset: 0, duration: 2, delay: 0.3, ease: "power2.inOut" });
+
+      // ========== 14. 深度视差遮罩 (背景文字) ==========
+      const parallaxBg = document.createElement('div');
+      parallaxBg.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; z-index:-3; pointer-events:none; font-size:20vw; font-weight:900; color:rgba(255,140,66,0.03); text-align:center; line-height:1;';
+      parallaxBg.innerText = 'M';
+      document.body.appendChild(parallaxBg);
+      gsap.to(parallaxBg, {
+        y: '-20%',
+        scrollTrigger: { trigger: 'body', start: 'top top', end: 'bottom bottom', scrub: 1 }
+      });
+
+      // ========== 15. 文字逐行高亮扫描 (功能标题) ==========
+      document.querySelectorAll('.card p, .ai-block p').forEach(p => {
+        p.style.position = 'relative';
+        p.style.overflow = 'hidden';
+        const highlight = document.createElement('span');
+        highlight.style.cssText = 'position:absolute; top:0; left:-100%; width:100%; height:100%; background:linear-gradient(90deg, transparent, rgba(255,183,71,0.3), transparent); pointer-events:none;';
+        p.appendChild(highlight);
+        gsap.fromTo(highlight, { left: '-100%' }, {
+          left: '100%', duration: 1.5,
+          scrollTrigger: { trigger: p, start: 'top 90%' },
+          ease: "power2.inOut"
+        });
+      });
+
+      // ========== 16. 全屏转场撕裂 (团队区块进入时) ==========
+      const transitionCanvas = document.getElementById('transitionCanvas');
+      const tctx = transitionCanvas.getContext('2d');
+      function resizeTransition() {
+        transitionCanvas.width = window.innerWidth;
+        transitionCanvas.height = window.innerHeight;
+      }
+      window.addEventListener('resize', resizeTransition);
+      resizeTransition();
+      function tearEffect() {
+        transitionCanvas.style.display = 'block';
+        tctx.fillStyle = '#FFF3E0';
+        tctx.fillRect(0, 0, transitionCanvas.width, transitionCanvas.height);
+        tctx.globalCompositeOperation = 'destination-out';
+        const tearSteps = 30;
+        let step = 0;
+        function drawTear() {
+          tctx.beginPath();
+          const x = transitionCanvas.width * (step / tearSteps);
+          tctx.moveTo(x, 0);
+          for (let y = 0; y < transitionCanvas.height; y += 10) {
+            tctx.lineTo(x + Math.sin(y * 0.05 + step) * 20, y);
+          }
+          tctx.lineTo(x, transitionCanvas.height);
+          tctx.lineWidth = 20;
+          tctx.strokeStyle = 'rgba(0,0,0,1)';
+          tctx.stroke();
+          if (step < tearSteps) {
+            step++;
+            requestAnimationFrame(drawTear);
+          } else {
+            transitionCanvas.style.display = 'none';
+            tctx.globalCompositeOperation = 'source-over';
+          }
+        }
+        drawTear();
+      }
+      ScrollTrigger.create({
+        trigger: '#about',
+        start: 'top 70%',
+        onEnter: tearEffect,
+        once: true,
+      });
+
+      // ========== 17. 平滑锚点滚动 ==========
+      document.querySelectorAll('a[href^="#"]').forEach(a => {
+        a.addEventListener('click', e => {
+          e.preventDefault();
+          document.querySelector(a.getAttribute('href'))?.scrollIntoView({ behavior: 'smooth' });
+        });
+      });
+
+      console.log('✨ MarbyMarkdown 全动效官网已启动');
+    })();
+  </script>
 </body>
 </html>

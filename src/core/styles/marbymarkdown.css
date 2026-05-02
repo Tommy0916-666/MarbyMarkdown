@@ -1,0 +1,1539 @@
+/**
+ * Marbymarkdown 编辑器样式
+ */
+
+/* 编辑器容器 */
+.marbymarkdown-editor {
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text-color, #333);
+  background: var(--background-color, #fff);
+  padding: 20px var(--marbymarkdown-editor-padding, 20px);
+  outline: none;
+  min-height: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative; /* 为 placeholder 提供定位上下文 */
+  user-select: text; /* 编辑器区域允许选中文本 */
+  -webkit-user-select: text; /* Safari 兼容 */
+}
+
+/* 源码模式下为行号留出空间 */
+.marbymarkdown-editor.source-view {
+  padding-left: calc(var(--marbymarkdown-editor-padding, 20px) + 60px); /* 左右边距 + 行号区域 */
+}
+
+/* 语法标记 - 隐藏 */
+.marbymarkdown-syntax-hidden {
+  font-size: 0;
+  opacity: 0;
+  width: 0;
+  display: inline;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* 语法标记 - 显示 */
+.marbymarkdown-syntax-visible,
+.marbymarkdown-syntax {
+  color: var(--text-color-3, #999);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.9em;
+}
+
+/* 语法标记 - 默认样式 */
+.marbymarkdown-syntax-marker {
+  color: var(--text-color-3, #999);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.9em;
+}
+
+/* 粗体 */
+.marbymarkdown-strong {
+  font-weight: 700;
+}
+
+/* 斜体 */
+.marbymarkdown-emphasis {
+  font-style: italic;
+}
+
+/* 行内代码 */
+.marbymarkdown-code-inline,
+.marbymarkdown-editor code {
+  display: inline-block;
+  vertical-align: baseline;
+  background: linear-gradient(
+    180deg,
+    var(--background-color-3, #eaecef) 0%,
+    var(--hover-background-color, rgba(94, 129, 172, 0.1)) 100%
+  );
+  color: var(--text-color-1, #333);
+  font-family:
+    var(--marbymarkdown-font-code), "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: calc(var(--marbymarkdown-font-size-code, 16px) * 0.875);
+  font-weight: 600;
+  line-height: 1.2;
+  padding: 0.16em 0.5em;
+  margin: 0 0.08em;
+  border: 1px solid var(--border-color-1, #d1d5da);
+  border-radius: 6px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 1px 2px rgba(0, 0, 0, 0.08);
+  word-break: break-word;
+}
+
+.marbymarkdown-syntax .marbymarkdown-code-inline,
+.marbymarkdown-syntax-visible .marbymarkdown-code-inline,
+.marbymarkdown-syntax-marker .marbymarkdown-code-inline,
+.marbymarkdown-editor code.marbymarkdown-syntax,
+.marbymarkdown-editor code.marbymarkdown-syntax-visible,
+.marbymarkdown-editor code.marbymarkdown-syntax-marker {
+  display: inline;
+  vertical-align: baseline;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  word-break: normal;
+}
+
+/* 删除线 */
+.marbymarkdown-strikethrough {
+  text-decoration: line-through;
+  color: var(--text-color-3, #999);
+}
+
+/* 链接 */
+.marbymarkdown-editor a,
+.marbymarkdown-link {
+  color: var(--primary-color, #0366d6);
+  text-decoration: none;
+}
+
+.marbymarkdown-editor a:hover,
+.marbymarkdown-link:hover {
+  text-decoration: underline;
+}
+
+/* 链接语法标记 - 与链接正文样式一致 */
+.marbymarkdown-editor a.marbymarkdown-syntax-visible,
+.marbymarkdown-editor a.marbymarkdown-syntax,
+.marbymarkdown-editor a.marbymarkdown-syntax-marker,
+.marbymarkdown-editor a span.marbymarkdown-syntax-visible,
+.marbymarkdown-editor a span.marbymarkdown-syntax,
+.marbymarkdown-editor .marbymarkdown-link.marbymarkdown-syntax-visible,
+.marbymarkdown-editor .marbymarkdown-link.marbymarkdown-syntax,
+.marbymarkdown-editor .marbymarkdown-link.marbymarkdown-syntax-marker,
+.marbymarkdown-editor span.marbymarkdown-syntax-visible[data-syntax-type="link"],
+.marbymarkdown-editor span.marbymarkdown-syntax[data-syntax-type="link"] {
+  color: var(--primary-color, #0366d6);
+  font-family: inherit;
+  font-size: inherit;
+  text-decoration: none;
+}
+
+/* 高亮 */
+.marbymarkdown-highlight {
+  background: var(--active-color, #fff3cd);
+  padding: 0.1em 0.2em;
+  border-radius: 2px;
+}
+
+/* 标题 */
+.marbymarkdown-editor h1,
+.marbymarkdown-editor h2,
+.marbymarkdown-editor h3,
+.marbymarkdown-editor h4,
+.marbymarkdown-editor h5,
+.marbymarkdown-editor h6 {
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.marbymarkdown-editor h1 {
+  font-size: 2em;
+}
+.marbymarkdown-editor h2 {
+  font-size: 1.5em;
+}
+.marbymarkdown-editor h3 {
+  font-size: 1.25em;
+}
+.marbymarkdown-editor h4 {
+  font-size: 1em;
+}
+.marbymarkdown-editor h5 {
+  font-size: 0.875em;
+}
+.marbymarkdown-editor h6 {
+  font-size: 0.85em;
+  color: var(--text-color-2, #6a737d);
+}
+
+/* 段落 */
+.marbymarkdown-editor p {
+  margin: 0;
+}
+
+/* 引用块 */
+.marbymarkdown-editor blockquote {
+  margin: 1em 0;
+  padding: 0.5em 1em;
+  border-left: 4px solid var(--border-color, #dfe2e5);
+  color: var(--text-color-2, #6a737d);
+  background: var(--background-color-1, #f8f9fa);
+}
+
+.marbymarkdown-editor blockquote > :first-child {
+  margin-top: 0;
+}
+
+.marbymarkdown-editor blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+/* 代码块 */
+.marbymarkdown-code-block {
+  margin: 1em 0;
+  border-radius: 6px;
+  overflow: visible;
+  background: var(--background-color-1, #f6f8fa);
+  border: 1px solid var(--border-color, #e1e4e8);
+}
+
+.marbymarkdown-code-block-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--background-color-2, #f1f3f5);
+  border-bottom: 1px solid var(--border-color, #e1e4e8);
+}
+
+/* 代码块复制按钮 */
+.marbymarkdown-code-block-copy-btn {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-color-3, #999);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 0.2s,
+    background 0.2s,
+    color 0.2s;
+}
+
+.marbymarkdown-code-block:hover .marbymarkdown-code-block-copy-btn {
+  opacity: 1;
+}
+
+.marbymarkdown-code-block-copy-btn:hover {
+  background: var(--hover-color, rgba(0, 0, 0, 0.06));
+  color: var(--text-color-1, #333);
+}
+
+.marbymarkdown-code-block-copy-btn.copied {
+  color: var(--secondary-color, #28a745);
+}
+
+/* 自定义下拉选择器 */
+.marbymarkdown-custom-select {
+  position: relative;
+  display: inline-block;
+}
+
+.marbymarkdown-custom-select-button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: var(--text-color-2, #666);
+  background: var(--background-color-1, #fff);
+  border: 1px solid var(--border-color, #e1e4e8);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-width: 80px;
+  justify-content: space-between;
+}
+
+.marbymarkdown-custom-select-button::after {
+  content: "";
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 4px solid var(--text-color-3, #999);
+  transition: transform 0.15s ease;
+}
+
+.marbymarkdown-custom-select.open .marbymarkdown-custom-select-button::after {
+  transform: rotate(180deg);
+}
+
+.marbymarkdown-custom-select-button:hover {
+  background: var(--hover-background-color, rgba(0, 0, 0, 0.05));
+  border-color: var(--border-color-1, #ccc);
+}
+
+.marbymarkdown-custom-select-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 1000;
+  min-width: 120px;
+  max-height: 240px;
+  overflow-y: auto;
+  margin-top: 4px;
+  padding: 4px 0;
+  background: var(--background-color-1, #fff);
+  border: 1px solid var(--border-color, #e1e4e8);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px);
+  transition: all 0.15s ease;
+}
+
+.marbymarkdown-custom-select.open .marbymarkdown-custom-select-dropdown {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* 向上弹出 */
+.marbymarkdown-custom-select.dropup .marbymarkdown-custom-select-dropdown {
+  top: auto;
+  bottom: 100%;
+  margin-top: 0;
+  margin-bottom: 4px;
+  transform: translateY(8px);
+}
+
+.marbymarkdown-custom-select.dropup.open .marbymarkdown-custom-select-dropdown {
+  transform: translateY(0);
+}
+
+.marbymarkdown-custom-select-item {
+  padding: 6px 12px;
+  font-size: 12px;
+  color: var(--text-color, #333);
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.marbymarkdown-custom-select-item:hover {
+  background: var(--hover-background-color, rgba(0, 0, 0, 0.05));
+}
+
+.marbymarkdown-custom-select-item.selected {
+  color: var(--primary-color, #0366d6);
+  background: var(--hover-color, rgba(3, 102, 214, 0.1));
+}
+
+/* 语言选择器 */
+.marbymarkdown-code-block-lang-select .marbymarkdown-custom-select-button {
+  min-width: 100px;
+}
+
+/* 模式选择器 */
+.marbymarkdown-code-block-mode-select .marbymarkdown-custom-select-button {
+  min-width: 70px;
+}
+
+.marbymarkdown-code-block-editor {
+  padding: 12px;
+}
+
+.marbymarkdown-code-block-editor .cm-editor {
+  background: transparent;
+}
+
+.marbymarkdown-code-block-editor .cm-editor.cm-focused {
+  outline: none;
+}
+
+.marbymarkdown-code-block-editor .cm-editor .cm-scroller {
+  outline: none;
+}
+
+.marbymarkdown-code-block-editor .cm-content {
+  font-family: var(
+    --marbymarkdown-font-code,
+    "SFMono-Regular",
+    Consolas,
+    "Liberation Mono",
+    Menlo,
+    monospace
+  ) !important;
+  font-size: var(--marbymarkdown-font-size-code, 14px) !important;
+  color: var(--text-color, #333);
+}
+
+/* 代码块底部点击区域 */
+.marbymarkdown-code-block-footer {
+  height: 12px;
+  cursor: text;
+  background: transparent;
+  margin-top: -4px;
+}
+
+.marbymarkdown-code-block-footer:hover {
+  background: var(--hover-background-color, rgba(0, 0, 0, 0.03));
+}
+
+/* 右键菜单 */
+.marbymarkdown-context-menu {
+  position: fixed;
+  z-index: 10000;
+  min-width: 120px;
+  padding: 4px 0;
+  background: var(--background-color-1, #fff);
+  border: 1px solid var(--border-color, #e1e4e8);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.marbymarkdown-context-menu-item {
+  padding: 6px 16px;
+  font-size: 13px;
+  color: var(--text-color, #333);
+  cursor: pointer;
+  transition: background 0.1s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+/* 菜单项快捷键提示 */
+.marbymarkdown-context-menu-shortcut {
+  font-size: 11px;
+  color: var(--text-color-3, #999);
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.marbymarkdown-context-menu-item:hover:not(.disabled) {
+  background: var(--hover-background-color, rgba(0, 0, 0, 0.05));
+}
+
+.marbymarkdown-context-menu-item.disabled {
+  color: var(--text-color-3, #999);
+  cursor: not-allowed;
+}
+
+/* 右键菜单分隔线 */
+.marbymarkdown-context-menu-separator {
+  height: 1px;
+  margin: 4px 8px;
+  background: var(--border-color, #e1e4e8);
+}
+
+/* 带子菜单的菜单项 */
+.marbymarkdown-context-menu-item.has-submenu {
+  position: relative;
+}
+
+.marbymarkdown-context-menu-item.has-submenu::after {
+  content: "";
+  width: 0;
+  height: 0;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 5px solid var(--text-color-3, #999);
+  margin-left: 12px;
+  flex-shrink: 0;
+}
+
+/* 子菜单容器 */
+.marbymarkdown-context-menu-submenu {
+  position: fixed;
+  z-index: 10001;
+  min-width: 160px;
+  padding: 4px 0;
+  background: var(--background-color-1, #fff);
+  border: 1px solid var(--border-color, #e1e4e8);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: none;
+}
+
+.marbymarkdown-context-menu-submenu.visible {
+  display: block;
+}
+
+/* 网格选择器子菜单需要 padding */
+.marbymarkdown-context-menu-submenu:has(.marbymarkdown-table-grid-picker) {
+  padding: 8px;
+}
+
+/* 表格网格选择器 */
+.marbymarkdown-table-grid-picker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 4px;
+}
+
+.marbymarkdown-table-grid-picker .grid-container {
+  display: grid;
+  grid-template-columns: repeat(8, 20px);
+  grid-template-rows: repeat(8, 20px);
+  gap: 2px;
+}
+
+.marbymarkdown-table-grid-picker .grid-cell {
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--border-color, #dfe2e5);
+  border-radius: 2px;
+  background: var(--background-color-1, #fff);
+  cursor: pointer;
+  transition:
+    background 0.05s ease,
+    border-color 0.05s ease;
+}
+
+.marbymarkdown-table-grid-picker .grid-cell.active {
+  background: var(--primary-color, #0366d6);
+  border-color: var(--primary-color, #0366d6);
+  opacity: 0.7;
+}
+
+.marbymarkdown-table-grid-picker .grid-label {
+  font-size: 12px;
+  color: var(--text-color-2, #6a737d);
+  white-space: nowrap;
+  min-height: 1.2em;
+}
+
+/* Mermaid 预览 */
+.marbymarkdown-mermaid-preview {
+  padding: 16px;
+  text-align: center;
+  border-top: 1px solid var(--border-color, #e1e4e8);
+  background: var(--background-color-1, #fff);
+}
+
+.marbymarkdown-mermaid-preview svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.marbymarkdown-mermaid-preview .edgeLabel span,
+.marbymarkdown-mermaid-preview .edgeLabel p {
+  color: var(--text-color) !important;
+}
+
+.marbymarkdown-mermaid-preview .cluster-label foreignObject {
+  overflow: visible;
+}
+
+.marbymarkdown-mermaid-preview .cluster-label div {
+  white-space: nowrap;
+}
+
+.marbymarkdown-mermaid-error {
+  color: var(--primary-color, #dc3545);
+  font-size: 14px;
+}
+
+/* 分隔线 */
+.marbymarkdown-editor hr {
+  height: 2px;
+  margin: 2em 0;
+  padding: 0;
+  background: var(--border-color, #e1e4e8);
+  border: none;
+}
+
+/* 列表 */
+.marbymarkdown-editor ul,
+.marbymarkdown-editor ol {
+  margin: 1em 0;
+  padding-left: 2em;
+}
+
+.marbymarkdown-editor li {
+  margin: 0.25em 0;
+}
+
+/* 任务列表 */
+.marbymarkdown-editor ul.task-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.marbymarkdown-editor li.task-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.marbymarkdown-editor li.task-item input[type="checkbox"] {
+  margin-top: 0.3em;
+  cursor: pointer;
+}
+
+/* 表格 */
+.marbymarkdown-editor table {
+  width: 100%;
+  margin: 1em 0;
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+.marbymarkdown-editor th,
+.marbymarkdown-editor td {
+  padding: 8px 12px;
+  border: 1px solid var(--border-color, #dfe2e5);
+  text-align: left;
+}
+
+.marbymarkdown-editor th {
+  font-weight: 600;
+  background: var(--background-color-2, #f6f8fa);
+}
+
+.marbymarkdown-editor tr:nth-child(even) {
+  background: var(--background-color-1, #f8f9fa);
+}
+
+/* 图片 */
+.marbymarkdown-editor img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 1em auto;
+  border-radius: 4px;
+}
+
+/* ProseMirror 内部占位图片（光标定位用），不应继承内容图片的样式 */
+.marbymarkdown-editor img.ProseMirror-separator {
+  display: inline;
+  margin: 0;
+  border-radius: 0;
+}
+
+/* 图片块 NodeView */
+.marbymarkdown-editor .marbymarkdown-image-block {
+  margin: 1em 0;
+  text-align: center;
+}
+
+/* 图片预览区域 */
+.marbymarkdown-editor .marbymarkdown-image-block .marbymarkdown-image-preview {
+  cursor: pointer;
+}
+
+.marbymarkdown-editor .marbymarkdown-image-block .marbymarkdown-image-preview img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  border-radius: 4px;
+}
+
+/* 图片源码容器 */
+.marbymarkdown-editor .marbymarkdown-image-block .marbymarkdown-image-source-container {
+  display: none;
+  text-align: center;
+  padding: 0.5em 0;
+}
+
+/* 图片源码 - 使用正常文本样式 */
+.marbymarkdown-editor .marbymarkdown-image-block .marbymarkdown-image-source {
+  display: inline-block;
+  font-family: inherit;
+  font-size: inherit;
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: inherit;
+}
+
+/* 编辑模式：同时显示图片和源码 */
+.marbymarkdown-editor .marbymarkdown-image-block.editing .marbymarkdown-image-source-container {
+  display: block;
+}
+
+/* 图片源码输入框 - 边框淡化 */
+.marbymarkdown-editor .marbymarkdown-image-block .marbymarkdown-image-source-input {
+  width: 100%;
+  max-width: 800px;
+  padding: 0.5em;
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  background: transparent;
+  border: 1px solid transparent;
+  border-bottom: 1px dashed var(--border-color, #e1e4e8);
+  border-radius: 0;
+  text-align: center;
+  outline: none;
+  user-select: text;
+  -webkit-user-drag: none;
+}
+
+.marbymarkdown-editor .marbymarkdown-image-block .marbymarkdown-image-source-container {
+  -webkit-user-drag: none;
+  user-select: text;
+  pointer-events: auto;
+}
+
+/* 编辑模式下禁止图片块拖动 */
+.marbymarkdown-editor .marbymarkdown-image-block.editing {
+  -webkit-user-drag: none;
+}
+
+.marbymarkdown-editor .marbymarkdown-image-block .marbymarkdown-image-source-input:focus {
+  border-bottom-color: var(--primary-color, #0366d6);
+  border-bottom-style: solid;
+}
+
+/* 源码在图片前面时的间距 */
+.marbymarkdown-editor .marbymarkdown-image-block.source-before .marbymarkdown-image-source-container {
+  margin-bottom: 0.5em;
+}
+
+/* 源码在图片后面时的间距 */
+.marbymarkdown-editor .marbymarkdown-image-block.source-after .marbymarkdown-image-source-container {
+  margin-top: 0.5em;
+}
+
+/* 图片占位元素 */
+.marbymarkdown-editor .marbymarkdown-image-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  padding: 1.5em;
+  background: var(--background-color-2, #f5f5f5);
+  border-radius: 8px;
+  color: var(--placeholder-color, #adb5bd);
+  gap: 0.5em;
+}
+
+.marbymarkdown-editor .marbymarkdown-image-placeholder-icon {
+  font-size: 2em;
+  opacity: 0.6;
+}
+
+.marbymarkdown-editor .marbymarkdown-image-placeholder-text {
+  font-size: 0.9em;
+}
+
+.marbymarkdown-editor .marbymarkdown-image-placeholder-src {
+  font-size: 0.8em;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  word-break: break-all;
+  max-width: 100%;
+  opacity: 0.7;
+}
+
+/* 图片加载错误占位 */
+.marbymarkdown-editor .marbymarkdown-image-error-placeholder {
+  background: var(--background-color-1, #f8f9fa);
+  border: 1px dashed var(--primary-color, #dc3545);
+}
+
+.marbymarkdown-editor .marbymarkdown-image-error-placeholder .marbymarkdown-image-placeholder-text {
+  color: var(--primary-color, #dc3545);
+}
+
+/* 图片加载错误（旧样式，保留兼容） */
+.marbymarkdown-editor .marbymarkdown-image-error {
+  color: var(--primary-color, #dc3545);
+  font-style: italic;
+}
+
+/* 数学块 */
+.marbymarkdown-editor .math-block {
+  margin: 1em 0;
+  text-align: center;
+  overflow-x: auto;
+  color: inherit;
+}
+
+/* 数学块预览区域 */
+.marbymarkdown-editor .math-block .math-preview {
+  padding: 0.5em 0;
+  cursor: pointer;
+  color: inherit;
+}
+
+.marbymarkdown-editor .math-block .math-preview .katex {
+  color: inherit !important;
+}
+
+/* 强制 KaTeX 所有元素继承颜色 */
+.marbymarkdown-editor .math-block .math-preview .katex *,
+.marbymarkdown-editor .math-block .math-preview .katex .katex-html,
+.marbymarkdown-editor .math-block .math-preview .katex .base,
+.marbymarkdown-editor .math-block .math-preview .katex .strut,
+.marbymarkdown-editor .math-block .math-preview .katex .mord,
+.marbymarkdown-editor .math-block .math-preview .katex .mbin,
+.marbymarkdown-editor .math-block .math-preview .katex .mrel,
+.marbymarkdown-editor .math-block .math-preview .katex .mopen,
+.marbymarkdown-editor .math-block .math-preview .katex .mclose,
+.marbymarkdown-editor .math-block .math-preview .katex .mpunct,
+.marbymarkdown-editor .math-block .math-preview .katex .minner {
+  color: inherit !important;
+}
+
+/* 数学块源码容器 */
+.marbymarkdown-editor .math-block .math-source-container {
+  display: none;
+  text-align: center;
+  padding: 0.5em 0;
+  color: inherit;
+}
+
+/* 数学块源码 - 与渲染状态保持一致的大小和颜色 */
+.marbymarkdown-editor .math-block .math-source {
+  display: inline-block;
+  min-width: 1ch;
+  min-height: 1.2em;
+  font-family: KaTeX_Main, "Times New Roman", serif;
+  font-size: 1.21em;
+  white-space: pre-wrap;
+  text-align: center;
+  color: inherit;
+  caret-color: currentColor;
+  outline: none;
+}
+
+.marbymarkdown-editor .math-block .math-source:empty::before {
+  content: "\200b";
+}
+
+/* 编辑模式：隐藏预览，显示源码 */
+.marbymarkdown-editor .math-block.editing .math-preview {
+  display: none;
+}
+
+.marbymarkdown-editor .math-block.editing .math-source-container {
+  display: block;
+}
+
+/* ============ HTML 块 ============ */
+
+.marbymarkdown-html-block {
+  margin: 1em 0;
+  border-radius: 6px;
+  overflow: visible;
+  background: var(--background-color-1, #f6f8fa);
+  border: 1px solid var(--border-color, #e1e4e8);
+}
+
+.marbymarkdown-html-block-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--background-color-2, #f1f3f5);
+  border-bottom: 1px solid var(--border-color, #e1e4e8);
+}
+
+.marbymarkdown-html-block-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-color-2, #656d76);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.marbymarkdown-html-block-preview {
+  padding: 12px;
+  min-height: 1em;
+  cursor: pointer;
+  color: inherit;
+  overflow: auto;
+  max-height: 600px;
+}
+
+.marbymarkdown-html-block-preview .html-placeholder {
+  color: var(--text-color-3, #8b949e);
+  font-style: italic;
+}
+
+.marbymarkdown-html-block-editor {
+  padding: 12px;
+}
+
+.marbymarkdown-html-block-editor .cm-editor {
+  outline: none;
+}
+
+/* 源码模式 */
+.marbymarkdown-html-block.source-view {
+  background: transparent;
+  border: none;
+  margin: 0;
+  border-radius: 0;
+}
+
+/* 简单内联 HTML（如 <br />）：隐藏外框，直接显示渲染结果 */
+.marbymarkdown-html-block.inline-html {
+  background: transparent;
+  border: none;
+  margin: 0;
+  border-radius: 0;
+}
+
+.marbymarkdown-html-block.inline-html .marbymarkdown-html-block-preview {
+  padding: 0;
+  min-height: 0;
+}
+
+/* 有内容的 HTML 块（非编辑模式）：隐藏外框，直接显示渲染结果 */
+.marbymarkdown-html-block.has-content:not(.editing) {
+  background: transparent;
+  border: none;
+  margin: 0;
+  border-radius: 0;
+}
+
+.marbymarkdown-html-block.has-content:not(.editing) .marbymarkdown-html-block-preview {
+  padding: 0;
+  min-height: 0;
+}
+
+/* 行内数学 */
+.marbymarkdown-editor .math-inline,
+.marbymarkdown-math-inline {
+  /* 由 KaTeX 渲染，无额外样式 */
+}
+
+/* 行内数学公式的语法标记（$ 符号）- 颜色与正文一致 */
+.marbymarkdown-editor span.marbymarkdown-syntax[data-syntax-type="math_inline"],
+.marbymarkdown-editor span.marbymarkdown-syntax-visible[data-syntax-type="math_inline"] {
+  color: inherit !important;
+  font-family: inherit !important;
+  font-size: inherit !important;
+}
+
+/* 行内数学公式内容 - 颜色与正文一致 */
+.marbymarkdown-editor span.math-inline {
+  color: inherit !important;
+}
+
+/* 行内数学公式源码隐藏 */
+.marbymarkdown-math-source-hidden {
+  font-size: 0;
+  opacity: 0;
+  width: 0;
+  display: inline;
+  user-select: none;
+}
+
+/* 行内数学公式渲染结果 - 颜色与正文一致 */
+.marbymarkdown-editor .marbymarkdown-math-rendered {
+  display: inline;
+  color: inherit;
+}
+
+.marbymarkdown-editor .marbymarkdown-math-rendered .katex {
+  font-size: 1em;
+  color: inherit !important;
+}
+
+/* 强制行内 KaTeX 所有元素继承颜色 */
+.marbymarkdown-editor .marbymarkdown-math-rendered .katex *,
+.marbymarkdown-editor .marbymarkdown-math-rendered .katex .katex-html,
+.marbymarkdown-editor .marbymarkdown-math-rendered .katex .base,
+.marbymarkdown-editor .marbymarkdown-math-rendered .katex .strut,
+.marbymarkdown-editor .marbymarkdown-math-rendered .katex .mord,
+.marbymarkdown-editor .marbymarkdown-math-rendered .katex .mbin,
+.marbymarkdown-editor .marbymarkdown-math-rendered .katex .mrel,
+.marbymarkdown-editor .marbymarkdown-math-rendered .katex .mopen,
+.marbymarkdown-editor .marbymarkdown-math-rendered .katex .mclose,
+.marbymarkdown-editor .marbymarkdown-math-rendered .katex .mpunct,
+.marbymarkdown-editor .marbymarkdown-math-rendered .katex .minner {
+  color: inherit !important;
+}
+
+/* 数学公式错误 */
+.marbymarkdown-editor .math-error {
+  color: var(--primary-color, #dc3545);
+  font-family: monospace;
+}
+
+/* 数学公式占位符 */
+.marbymarkdown-editor .math-placeholder {
+  color: var(--placeholder-color, #adb5bd);
+  font-style: italic;
+}
+
+/* 容器 */
+.marbymarkdown-editor .container {
+  margin: 1em 0;
+  padding: 1em;
+  border-radius: 6px;
+  border-left: 4px solid;
+}
+
+.marbymarkdown-editor .container-note {
+  background: #e8f4fd;
+  border-color: #0366d6;
+}
+
+.marbymarkdown-editor .container-tip {
+  background: #e6f6e6;
+  border-color: #28a745;
+}
+
+.marbymarkdown-editor .container-warning {
+  background: #fff8e6;
+  border-color: #ffc107;
+}
+
+.marbymarkdown-editor .container-danger {
+  background: #ffeef0;
+  border-color: #dc3545;
+}
+
+/* 源码视图模式 */
+.marbymarkdown-editor.source-view .marbymarkdown-syntax-hidden {
+  font-size: 0.9em;
+  opacity: 1;
+  width: auto;
+  display: inline;
+  user-select: auto;
+  color: var(--text-color-3, #999);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+}
+
+/* 源码模式下隐藏数学公式渲染 widget */
+.marbymarkdown-editor.source-view .marbymarkdown-math-rendered {
+  display: none !important;
+}
+
+/* 源码模式下显示数学公式源码 */
+.marbymarkdown-editor.source-view .marbymarkdown-math-source-hidden {
+  font-size: inherit;
+  opacity: 1;
+  width: auto;
+  user-select: auto;
+}
+
+/* 源码模式下禁用高亮渲染 */
+.marbymarkdown-editor.source-view mark {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+}
+
+/* 源码模式下隐藏分割线（由 source-view-transform 转为段落） */
+.marbymarkdown-editor.source-view hr {
+  display: none;
+}
+
+/* 行号 - 使用 CSS 计数器和绝对定位 */
+.marbymarkdown-editor.source-view {
+  counter-reset: line-number;
+}
+
+.marbymarkdown-editor.source-view .marbymarkdown-with-line-number {
+  position: relative; /* 为行号提供定位上下文 */
+}
+
+.marbymarkdown-editor.source-view .marbymarkdown-with-line-number::before {
+  counter-increment: line-number;
+  content: counter(line-number);
+  position: absolute;
+  left: calc(-60px); /* 定位到左侧外部 */
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  padding-right: 8px;
+  text-align: right;
+  color: var(--text-color-3, #999) !important;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace !important;
+  font-size: 14px !important;
+  font-weight: normal !important;
+  font-style: normal !important;
+  line-height: 1.6 !important;
+  user-select: none;
+  pointer-events: none;
+  border-right: 1px solid var(--border-color-1, #e1e4e8);
+  margin-right: 12px;
+}
+
+/* 列表项内段落的行号 - 补偿列表标记宽度 */
+.marbymarkdown-editor.source-view
+  .marbymarkdown-list-item.source-view
+  .marbymarkdown-list-item-content
+  > .marbymarkdown-list-line-number::before,
+.marbymarkdown-editor.source-view
+  .marbymarkdown-task-item.source-view
+  .marbymarkdown-list-item-content
+  > .marbymarkdown-list-line-number::before {
+  left: calc(-60px - var(--marker-width, 20px));
+}
+
+/* 源码模式下的代码块段落 - 移除段落间距，使用不同颜色区分 */
+.marbymarkdown-editor.source-view p[data-code-block-id] {
+  margin: 0;
+  padding: 0;
+  line-height: 1.6;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 14px;
+  color: var(--secondary-color, #6a9955);
+  white-space: pre-wrap;
+}
+
+/* 源码模式下的列表段落 - 保留缩进空白 */
+.marbymarkdown-editor.source-view p[data-list-id] {
+  margin: 0;
+  padding: 0;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+/* 代码块 - 使用 data-line-count 属性来递增计数器 */
+.marbymarkdown-editor.source-view .marbymarkdown-code-block-lines {
+  position: relative;
+}
+
+.marbymarkdown-editor.source-view .marbymarkdown-code-block-lines::before {
+  counter-increment: line-number attr(data-line-count number, 1);
+  content: "";
+  display: none;
+}
+
+/* 光标样式 */
+.marbymarkdown-editor .ProseMirror-cursor {
+  border-left: 2px solid var(--text-color, #333);
+}
+
+/* 选区样式 */
+.marbymarkdown-editor .ProseMirror-selectednode {
+  outline: 2px solid var(--primary-color, #0366d6);
+}
+
+/* 占位符 */
+.marbymarkdown-editor.marbymarkdown-empty::before {
+  content: attr(data-placeholder);
+  color: var(--placeholder-color, #adb5bd);
+  pointer-events: none;
+  user-select: none;
+  position: absolute;
+  /* 使用 padding 来定位，与编辑器的 padding 保持一致 */
+  left: 0;
+  top: 0;
+  padding: 58px calc(var(--marbymarkdown-editor-padding, 20px) + 8px);
+}
+
+/* 源码模式下的占位符需要向右偏移以避开行号 */
+.marbymarkdown-editor.marbymarkdown-empty.source-view::before {
+  padding-top: 56px;
+  padding-left: calc(
+    var(--marbymarkdown-editor-padding, 20px) + 20px + 48px
+  ); /* 左右边距 + 上下边距 + 行号区域 */
+}
+
+/* ============ 源码模式样式 ============ */
+
+/* 引用块源码模式 - 移除渲染样式 */
+.marbymarkdown-editor.source-view blockquote {
+  margin: 0;
+  padding: 0;
+  border-left: none;
+  color: inherit;
+  background: transparent;
+}
+
+/* 代码块源码模式 */
+.marbymarkdown-code-block.source-view {
+  background: transparent;
+  border: none;
+  margin: 0;
+}
+
+.marbymarkdown-code-block.source-view .marbymarkdown-code-block-header {
+  display: none;
+}
+
+.marbymarkdown-code-block.source-view .marbymarkdown-code-block-footer {
+  display: none;
+}
+
+.marbymarkdown-code-block.source-view .marbymarkdown-code-block-editor {
+  padding: 0;
+}
+
+/* 代码块源码内容 */
+.marbymarkdown-code-block-source {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  color: inherit;
+  white-space: pre;
+  padding: 0;
+  margin: 0;
+  outline: none;
+  min-height: 1.6em;
+}
+
+.marbymarkdown-code-block-source:focus {
+  outline: none;
+}
+
+.marbymarkdown-code-block-source:empty::before {
+  content: "```\n\n```";
+  color: var(--text-color-3, #999);
+  pointer-events: none;
+}
+
+/* 代码块源码模式：使用 data-line-count 属性递增行号计数器 */
+.marbymarkdown-editor.source-view .marbymarkdown-code-block-source::before {
+  counter-increment: line-number attr(data-line-count number, 1);
+  content: "";
+  display: none;
+}
+
+/* 图片源码模式 */
+.marbymarkdown-image-block.source-view {
+  text-align: left;
+}
+
+.marbymarkdown-image-block.source-view .marbymarkdown-image-preview {
+  display: none !important;
+}
+
+.marbymarkdown-image-block.source-view .marbymarkdown-image-source-container {
+  display: none !important;
+}
+
+/* 图片源码文本 */
+.marbymarkdown-image-source-text {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  line-height: 1.6;
+  outline: none;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.marbymarkdown-image-source-text:focus {
+  background: var(--hover-background-color, rgba(0, 0, 0, 0.03));
+  border-radius: 2px;
+}
+
+/* 列表源码模式 */
+.marbymarkdown-bullet-list.source-view,
+.marbymarkdown-ordered-list.source-view,
+.marbymarkdown-task-list.source-view {
+  list-style: none;
+  padding-left: 0;
+  margin-left: 0;
+}
+
+.marbymarkdown-bullet-list.source-view .marbymarkdown-bullet-list.source-view,
+.marbymarkdown-bullet-list.source-view .marbymarkdown-ordered-list.source-view,
+.marbymarkdown-ordered-list.source-view .marbymarkdown-bullet-list.source-view,
+.marbymarkdown-ordered-list.source-view .marbymarkdown-ordered-list.source-view {
+  padding-left: 2em;
+}
+
+/* 列表项源码模式 */
+.marbymarkdown-list-item {
+  display: list-item; /* 即时渲染模式使用浏览器默认列表样式 */
+}
+
+.marbymarkdown-list-item-content {
+  display: inline;
+}
+
+.marbymarkdown-list-item-content > p {
+  display: inline;
+  margin: 0;
+}
+
+.marbymarkdown-list-item-content > p:first-child {
+  display: inline;
+}
+
+/* 列表标记 */
+.marbymarkdown-list-marker {
+  display: none;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  color: var(--text-color-3, #999);
+}
+
+.marbymarkdown-list-item.source-view {
+  display: flex;
+  align-items: flex-start;
+}
+
+.marbymarkdown-list-item.source-view .marbymarkdown-list-marker {
+  display: inline;
+  flex-shrink: 0;
+}
+
+.marbymarkdown-list-item.source-view .marbymarkdown-list-item-content {
+  flex: 1;
+}
+
+.marbymarkdown-list-item.source-view .marbymarkdown-list-item-content > p {
+  display: block;
+}
+
+/* 任务列表 NodeView */
+.marbymarkdown-task-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.marbymarkdown-task-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+/* 自定义复选框 */
+.marbymarkdown-task-checkbox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  margin-top: 0.3em;
+  border: 1.5px solid var(--border-color-1, #d1d5da);
+  border-radius: 3px;
+  background: var(--background-color, #fff);
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+  box-sizing: border-box;
+}
+
+.marbymarkdown-task-checkbox:hover {
+  border-color: var(--primary-color, #0366d6);
+  background: var(--hover-color, rgba(3, 102, 214, 0.1));
+}
+
+.marbymarkdown-task-checkbox.checked {
+  background: var(--primary-color, #0366d6);
+  border-color: var(--primary-color, #0366d6);
+}
+
+.marbymarkdown-task-checkbox.checked:hover {
+  opacity: 0.85;
+}
+
+.marbymarkdown-task-checkbox.checked::after {
+  content: "";
+  display: block;
+  width: 4px;
+  height: 8px;
+  border: solid var(--background-color, #fff);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) translate(-0.5px, -0.5px);
+}
+
+/* 任务列表项源码模式 */
+.marbymarkdown-task-item.source-view {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+}
+
+.marbymarkdown-task-item.source-view .marbymarkdown-task-checkbox {
+  display: none;
+}
+
+.marbymarkdown-task-item.source-view .marbymarkdown-list-marker {
+  display: inline;
+  flex-shrink: 0;
+}
+
+.marbymarkdown-task-item.source-view .marbymarkdown-list-item-content {
+  flex: 1;
+}
+
+.marbymarkdown-task-item.source-view .marbymarkdown-list-item-content > p {
+  display: block;
+}
+
+/* ========== 搜索替换面板 ========== */
+
+.marbymarkdown-search-wrapper {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: 0;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+  display: none;
+}
+
+.marbymarkdown-search-wrapper.visible {
+  display: block;
+}
+
+.marbymarkdown-search-panel {
+  pointer-events: auto;
+  position: absolute;
+  top: 0;
+  right: 16px;
+  background: var(--background-color, #fff);
+  border: 1px solid var(--border-color, #e1e4e8);
+  border-radius: 0 0 6px 6px;
+  padding: 6px 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  font-size: 13px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.marbymarkdown-search-row,
+.marbymarkdown-replace-row {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-height: 28px;
+}
+
+.marbymarkdown-replace-row {
+  margin-top: 4px;
+  padding-left: 27px;
+}
+
+.marbymarkdown-replace-row.hidden {
+  display: none;
+}
+
+.marbymarkdown-search-panel input {
+  height: 24px;
+  padding: 2px 6px;
+  border: 1px solid var(--border-color, #e1e4e8);
+  border-radius: 3px;
+  background: var(--background-color, #fff);
+  color: var(--text-color, #333);
+  font-size: 13px;
+  outline: none;
+  width: 180px;
+  box-sizing: border-box;
+}
+
+.marbymarkdown-search-panel input:focus {
+  border-color: var(--primary-color, #0366d6);
+  box-shadow: 0 0 0 1px var(--primary-color, #0366d6);
+}
+
+.marbymarkdown-search-panel button {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--text-color-2, #6a737d);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  line-height: 1;
+  user-select: none;
+}
+
+.marbymarkdown-search-panel button:hover {
+  background: var(--hover-color, rgba(0, 0, 0, 0.06));
+  color: var(--text-color, #333);
+}
+
+.marbymarkdown-search-panel button.active {
+  background: rgba(0, 100, 214, 0.12);
+  border-color: var(--primary-color, #0366d6);
+  color: var(--primary-color, #0366d6);
+}
+
+.marbymarkdown-search-panel button svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+
+.marbymarkdown-search-panel .match-count {
+  font-size: 12px;
+  color: var(--text-color-2, #6a737d);
+  white-space: nowrap;
+  min-width: 40px;
+  text-align: center;
+  user-select: none;
+}
+
+.marbymarkdown-search-panel .replace-btn {
+  width: auto;
+  padding: 0 8px;
+  font-size: 12px;
+  height: 22px;
+  border: 1px solid var(--border-color, #e1e4e8);
+}
+
+.marbymarkdown-search-panel .replace-btn:hover {
+  background: var(--hover-color, rgba(0, 0, 0, 0.06));
+}
+
+/* 搜索匹配高亮 */
+.marbymarkdown-search-match {
+  background: var(--active-color, rgba(255, 237, 0, 0.4));
+  border-radius: 2px;
+}
+
+.marbymarkdown-search-match-current {
+  background: rgba(255, 153, 0, 0.6);
+  outline: 1px solid var(--primary-color, #0366d6);
+}
+
+/* ============ 链接 Tooltip ============ */
+.marbymarkdown-link-tooltip {
+  display: none;
+  position: absolute;
+  z-index: 100;
+  max-width: 400px;
+  padding: 4px 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-color-2, #666);
+  background: var(--background-color-2, #f1f3f5);
+  border: 1px solid var(--border-color, #e1e4e8);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  pointer-events: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}

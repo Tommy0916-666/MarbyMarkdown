@@ -1,0 +1,157 @@
+import type { Block, ExportPDFOptions } from "./main/types";
+import { contextBridge, ipcRenderer, webUtils } from "electron";
+
+// 存储 listener 到 wrapper 的映射，以便 removeListener 能正确移除
+const listenerMap = new Map<Function, Map<string, Function>>();
+
+contextBridge.exposeInMainWorld("electronAPI", {
+  openFile: () => ipcRenderer.invoke("dialog:openFile"),
+  getIsReadOnly: (filePath: string) => ipcRenderer.invoke("file:isReadOnly", filePath),
+  saveFile: (filePath: string | null, content: string, fileTraits?: any, imageLocalPath?: string) =>
+    ipcRenderer.invoke("dialog:saveFile", { filePath, content, fileTraits, imageLocalPath }),
+  saveFileAs: (content: string, fileTraits?: any, imageLocalPath?: string, defaultDir?: string) =>
+    ipcRenderer.invoke("dialog:saveFileAs", { content, fileTraits, imageLocalPath, defaultDir }),
+  on: (channel: string, listener: (...args: any[]) => void) => {
+    const wrapper = (_event: any, ...args: any[]) => listener(...args);
+    if (!listenerMap.has(listener)) listenerMap.set(listener, new Map());
+    listenerMap.get(listener)!.set(channel, wrapper);
+    ipcRenderer.on(channel, wrapper);
+  },
+  removeListener: (channel: string, listener: (...args: any[]) => void) => {
+    const wrapper = listenerMap.get(listener)?.get(channel);
+    if (wrapper) {
+      ipcRenderer.removeListener(channel, wrapper as any);
+      listenerMap.get(listener)!.delete(channel);
+      if (listenerMap.get(listener)!.size === 0) listenerMap.delete(listener);
+    }
+  },
+  setTitle: (filePath: string | null) => ipcRenderer.send("set-title", filePath),
+  changeSaveStatus: (isSaved: boolean) => ipcRenderer.send("change-save-status", isSaved),
+  windowControl: (action: "minimize" | "maximize" | "close") =>
+    ipcRenderer.send("window-control", action),
+  closeDiscard: () => ipcRenderer.send("close:discard"),
+  onOpenFileAtLaunch: (
+    cb: (payload: { filePath: string; content: string; fileTraits?: any }) => void
+  ) => {
+    ipcRenderer.on("open-file-at-launch", (_event, payload) => {
+      cb(payload);
+    });
+  },
+  openExternal: (url: string) => ipcRenderer.send("shell:openExternal", url),
+  openLink: (href: string, currentFilePath?: string | null) =>
+    ipcRenderer.invoke("shell:openLink", href, currentFilePath),
+  getFilePathInClipboard: () => ipcRenderer.invoke("clipboard:getFilePath"),
+  writeTempImage: (
+    file: Uint8Array,
+    targetPath: string,
+    currentFilePath?: string | null,
+    fileName?: string,
+    mimeType?: string
+  ) =>
+    ipcRenderer.invoke("clipboard:writeTempImage", {
+      file,
+      targetPath,
+      currentFilePath,
+      fileName,
+      mimeType,
+    }),
+  // 导出为 PDF
+  exportAsPDF: (elementSelector: string, outputName: string, options?: ExportPDFOptions) =>
+    ipcRenderer.invoke("file:exportPDF", elementSelector, outputName, options),
+  // 导出为 Word
+  exportAsWord: (blocks: Block, outputName: string) =>
+    ipcRenderer.invoke("file:exportWord", blocks, outputName),
+  // 通过路径读取文件（用于拖拽）
+  readFileByPath: (filePath: string) => ipcRenderer.invoke("file:readByPath", filePath),
+  // 显示文件覆盖确认对话框
+  showOverwriteConfirm: (fileName: string) =>
+    ipcRenderer.invoke("dialog:showOverwriteConfirm", fileName),
+  // 显示关闭确认对话框
+  showCloseConfirm: (fileName: string) => ipcRenderer.invoke("dialog:showCloseConfirm", fileName),
+  // 显示文件选择对话框
+  showOpenDialog: (options: any) => ipcRenderer.invoke("dialog:showOpenDialog", options),
+  // 获取拖拽文件的真实路径
+  getPathForFile: (file: File) => {
+    try {
+      // 在 preload 脚本中直接访问 webUtils
+      // const { webUtils } = require('electron')
+      const result = webUtils?.getPathForFile(file);
+      return result;
+    } catch (error) {
+      console.error("❌ preload 中 webUtils 不可用:", error);
+      return undefined;
+    }
+  },
+  // 字体相关
+  getSystemFonts: () => ipcRenderer.invoke("get-system-fonts"),
+  // 文件夹相关
+  getDirectoryFiles: (dirPath: string) =>
+    ipcRenderer.invoke("workspace:getDirectoryFiles", dirPath),
+  workspaceExists: (dirPath: string) => ipcRenderer.invoke("workspace:exists", dirPath),
+  // 监听文件变化
+  watchFiles: (filePaths: string[]) => ipcRenderer.send("file:watch", filePaths),
+
+  // 目录监听
+  watchDirectory: (dirPath: string) => ipcRenderer.send("workspace:watchDirectory", dirPath),
+  unwatchDirectory: () => ipcRenderer.send("workspace:unwatchDirectory"),
+
+  // 文件操作
+  createFile: (dirPath: string, fileName: string) =>
+    ipcRenderer.invoke("workspace:createFile", { dirPath, fileName }),
+  createFolder: (dirPath: string, folderName: string) =>
+    ipcRenderer.invoke("workspace:createFolder", { dirPath, folderName }),
+  deleteFile: (filePath: string) => ipcRenderer.invoke("workspace:deleteFile", filePath),
+  renameFile: (oldPath: string, newName: string) =>
+    ipcRenderer.invoke("workspace:renameFile", { oldPath, newName }),
+  cleanupLocalImages: (content: string) => ipcRenderer.invoke("file:cleanupLocalImages", content),
+
+  // 主题编辑器相关
+  openThemeEditor: (theme?: any) => ipcRenderer.send("open-theme-editor", theme),
+  themeEditorWindowControl: (action: "minimize" | "maximize" | "close") =>
+    ipcRenderer.send("theme-editor-window-control", action),
+  saveCustomTheme: (theme: any) => ipcRenderer.send("save-custom-theme", theme),
+  platform: process.platform,
+  rendererReady: () => ipcRenderer.send("renderer-ready"),
+  // 读取 GUIDE.md
+  readGuideFile: () => ipcRenderer.invoke("guide:readFile"),
+  // 获取应用版本号
+  getAppVersion: () => ipcRenderer.invoke("app:getVersion"),
+
+  // 临时回滚文件
+  saveRollbackTemp: (filePath: string, content: string) => ipcRenderer.invoke("rollback:saveTemp", filePath, content),
+  loadRollbackTemp: (filePath: string) => ipcRenderer.invoke("rollback:loadTemp", filePath),
+  deleteRollbackTemp: (filePath: string) => ipcRenderer.invoke("rollback:deleteTemp", filePath),
+
+  // Tab 拖拽分离
+  tearOffTabStart: (
+    tabData: any,
+    screenX: number,
+    screenY: number,
+    offsetX: number,
+    offsetY: number
+  ) => ipcRenderer.invoke("tab:tear-off-start", tabData, screenX, screenY, offsetX, offsetY),
+  tearOffTabEnd: (screenX: number, screenY: number) =>
+    ipcRenderer.invoke("tab:tear-off-end", screenX, screenY),
+  tearOffTabCancel: () => ipcRenderer.invoke("tab:tear-off-cancel"),
+  focusFileIfOpen: (filePath: string) => ipcRenderer.invoke("file:focus-if-open", filePath),
+  getInitialTabData: () => ipcRenderer.invoke("tab:get-init-data"),
+  getWindowBounds: () => ipcRenderer.invoke("window:get-bounds"),
+
+  // 单 Tab 窗口拖拽
+  startWindowDrag: (tabData: any, offsetX: number, offsetY: number) =>
+    ipcRenderer.send("window:start-drag", tabData, offsetX, offsetY),
+  stopWindowDrag: () => ipcRenderer.send("window:stop-drag"),
+  dropMerge: (tabData: any, screenX: number, screenY: number) =>
+    ipcRenderer.invoke("window:drop-merge", tabData, screenX, screenY),
+
+  // 知识库
+  getKbRootPath: () => ipcRenderer.invoke("kb:getRootPath"),
+  openKbInExplorer: () => ipcRenderer.invoke("kb:openInExplorer"),
+  openKbPath: (targetPath: string) => ipcRenderer.invoke("kb:openPath", targetPath),
+  listKnowledgeBases: () => ipcRenderer.invoke("kb:list"),
+  createKnowledgeBase: (name: string, description?: string) => ipcRenderer.invoke("kb:create", { name, description }),
+  deleteKnowledgeBase: (path: string) => ipcRenderer.invoke("kb:delete", { path }),
+  getKnowledgeBaseConfig: (kbPath: string) => ipcRenderer.invoke("kb:getConfig", kbPath),
+  updateKnowledgeBaseConfig: (kbPath: string, config: any) => ipcRenderer.invoke("kb:updateConfig", kbPath, config),
+
+});

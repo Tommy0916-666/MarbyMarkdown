@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>marbymarkdown</title>
+    <script>
+      // 在 DOM 渲染前立即应用主题背景色，避免启动时闪白/闪黑
+      ;(function () {
+        var theme = localStorage.getItem('theme-name') || 'normal'
+        var bgMap = {
+          normal: '#ffffff',
+          'normal-dark': '#3b4252',
+          crepe: '#fafbfc',
+          'crepe-dark': '#161b22',
+          frame: '#fbfbf2',
+          'frame-dark': '#383838',
+        }
+        var bg = bgMap[theme]
+        if (!bg) {
+          try {
+            var customs = JSON.parse(localStorage.getItem('custom-themes') || '[]')
+            for (var i = 0; i < customs.length; i++) {
+              if (customs[i].name === theme && customs[i].data && customs[i].data.appCssProperties) {
+                bg = customs[i].data.appCssProperties['--background-color-1']
+                break
+              }
+            }
+          } catch (e) {}
+        }
+        var primaryMap = {
+          normal: '#5e81ac',
+          'normal-dark': '#88c0d0',
+          crepe: '#0366d6',
+          'crepe-dark': '#58a6ff',
+          frame: '#4d8077',
+          'frame-dark': '#e3a76f',
+        }
+        var primary = primaryMap[theme]
+        if (!primary) {
+          try {
+            var c = customs || JSON.parse(localStorage.getItem('custom-themes') || '[]')
+            for (var j = 0; j < c.length; j++) {
+              if (c[j].name === theme && c[j].data && c[j].data.appCssProperties) {
+                primary = c[j].data.appCssProperties['--primary-color']
+                break
+              }
+            }
+          } catch (e) {}
+        }
+        document.documentElement.style.background = bg || '#ffffff'
+        document.documentElement.style.setProperty('--primary-color', primary || '#5e81ac')
+        document.documentElement.classList.add('theme-' + theme)
+      })()
+    </script>
+  </head>
+  <style>
+    .welcome {
+      width: calc(100vw - 36px);
+      height: calc(100vh - 36px);
+    }
+    .welcome > svg {
+      width: 31%;
+      height: 31%;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: block;
+      color: var(--primary-color);
+    }
+  </style>
+  <body>
+    <div id="app">
+      <div class="welcome">
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px;">
+          <img src="/logo.png" alt="MarbyMarkdown" style="width: 120px; height: 120px; border-radius: 24px; animation: pulse 2s ease-in-out infinite;"/>
+          <h1 style="font-size: 32px; font-weight: 600; color: var(--primary-color); margin: 0; letter-spacing: 0.5px;">MarbyMarkdown</h1>
+          <div style="display: flex; gap: 8px; margin-top: 8px;">
+            <div style="width: 12px; height: 12px; background: var(--primary-color); border-radius: 50%; animation: bounce 1.4s ease-in-out infinite; animation-delay: 0s;"></div>
+            <div style="width: 12px; height: 12px; background: var(--primary-color); border-radius: 50%; animation: bounce 1.4s ease-in-out infinite; animation-delay: 0.2s;"></div>
+            <div style="width: 12px; height: 12px; background: var(--primary-color); border-radius: 50%; animation: bounce 1.4s ease-in-out infinite; animation-delay: 0.4s;"></div>
+          </div>
+        </div>
+      </div>
+      <style>
+        @keyframes bounce {
+          0%, 80%, 100% { transform: translateY(0); }
+          40% { transform: translateY(-16px); }
+        }
+        @keyframes pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.05); }
+        }
+      </style>
+    </div>
+    <script type="module" src="/main.ts"></script>
+  </body>
+</html>

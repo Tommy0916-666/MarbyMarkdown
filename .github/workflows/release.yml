@@ -1,0 +1,187 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*' # 当推送以 v 开头的标签时触发，如 v1.0.0
+      - 'Beta*' # 当推送以 Beta 开头的标签时触发，如 Beta-v1.0.0
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  release:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # macOS Intel
+          - os: macos-latest
+            platform: mac
+            arch: x64
+            script: dist:mac-x64
+          # macOS Apple Silicon
+          - os: macos-latest
+            platform: mac
+            arch: arm64
+            script: dist:mac-arm64
+          # Linux
+          - os: ubuntu-latest
+            platform: linux
+            arch: x64
+            script: dist:linux-x64
+          # Windows 构建 (x64)
+          - os: windows-latest
+            platform: win
+            arch: x64
+            script: dist:win-x64
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        run: |
+          pnpm install --no-frozen-lockfile
+          pnpm rebuild
+
+      - name: Build application
+        run: |
+          echo "Building for ${{ matrix.platform }}-${{ matrix.arch }}"
+          pnpm run build
+          pnpm exec electron-builder --${{ matrix.platform }} --${{ matrix.arch }} --publish=never
+
+      - name: Compress win-unpacked to zip
+        if: matrix.platform == 'win'
+        shell: pwsh
+        run: Compress-Archive -Path "dist/win-unpacked/*" -DestinationPath "dist/marbymarkdown-win-x64-unpacked.zip"
+
+      - name: Upload artifacts (macOS Intel)
+        if: matrix.platform == 'mac' && matrix.arch == 'x64'
+        uses: actions/upload-artifact@v4
+        with:
+          name: marbymarkdown-${{ matrix.platform }}-${{ matrix.arch }}
+          path: |
+            dist/marbymarkdown-*.dmg
+            dist/marbymarkdown-*.dmg.blockmap
+            dist/latest-mac.yml
+          retention-days: 5
+
+      - name: Upload artifacts (macOS Apple Silicon)
+        if: matrix.platform == 'mac' && matrix.arch == 'arm64'
+        uses: actions/upload-artifact@v4
+        with:
+          name: marbymarkdown-${{ matrix.platform }}-${{ matrix.arch }}
+          path: |
+            dist/marbymarkdown-*-arm64.dmg
+            dist/marbymarkdown-*-arm64.dmg.blockmap
+            dist/latest-mac.yml
+          retention-days: 5
+
+      - name: Upload artifacts (Linux)
+        if: matrix.platform == 'linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: marbymarkdown-${{ matrix.platform }}-${{ matrix.arch }}
+          path: |
+            dist/marbymarkdown-*.AppImage
+            dist/marbymarkdown-*.AppImage.blockmap
+            dist/latest.yml
+          retention-days: 5
+
+      - name: Upload artifacts (Windows)
+        if: matrix.platform == 'win'
+        uses: actions/upload-artifact@v4
+        with:
+          name: marbymarkdown-${{ matrix.platform }}-${{ matrix.arch }}
+          path: |
+            dist/marbymarkdown Setup *.exe
+            dist/marbymarkdown Setup *.exe.blockmap
+            dist/marbymarkdown-win-x64-unpacked.zip
+            dist/latest.yml
+          retention-days: 5
+
+  # 创建 GitHub Release 并上传所有构建产物
+  create-release:
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install Dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Display structure of downloaded files
+        run: |
+          echo "=== Artifacts structure ==="
+          find artifacts -type f | sort
+          echo "=== DMG files ==="
+          find artifacts -name "*.dmg" | sort
+          echo "=== AppImage files ==="
+          find artifacts -name "*.AppImage" | sort
+          echo "=== EXE files ==="
+          find artifacts -name "*.exe" | sort
+
+      - name: Prepare release files
+        run: |
+          mkdir -p release_files
+          # Copy unique files to avoid duplicates
+          find artifacts -name "*.dmg" -exec cp {} release_files/ \;
+          find artifacts -name "*.AppImage" -exec cp {} release_files/ \;
+          find artifacts -name "*.exe" -exec cp {} release_files/ \;
+          find artifacts -name "*.zip" -exec cp {} release_files/ \;
+          echo "=== Release files ==="
+          ls -la release_files/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: marbymarkdown ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          body: |
+            ## marbymarkdown ${{ github.ref_name }}
+
+            ### 下载说明
+            - **macOS Intel**: 下载不含 arm64 的 DMG 文件
+            - **macOS Apple Silicon**: 下载带 arm64 的 DMG 文件
+            - **Linux**: 下载 AppImage 文件
+            - **Windows x64**: 下载 EXE 安装文件
+
+            ### 更新内容
+            请查看 commit 历史了解详细更新内容。
+          files: release_files/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
